@@ -23,7 +23,7 @@ namespace Sitecore.Support.ContentTesting.Pipelines.GetTests
         EnsureTestIsNotRunning = true
       }.GetRenderings())
       {
-        args.AddTest(new PersonalizationTest(current, args.Item));
+        args.AddTest(new Sitecore.Support.ContentTesting.Tests.PersonalizationTest(current, args.Item));
       }
     }
   }
