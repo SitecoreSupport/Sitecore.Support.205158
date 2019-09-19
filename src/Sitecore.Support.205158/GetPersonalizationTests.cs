@@ -1,4 +1,7 @@
-﻿using Sitecore.ContentTesting.Inspectors;
+﻿// © 2014-2019 Sitecore Corporation A/S. All rights reserved. Sitecore® is a registered trademark of Sitecore Corporation A/S.
+namespace Sitecore.Support.ContentTesting.Pipelines.GetTests
+{
+using Sitecore.ContentTesting.Inspectors;
 using Sitecore.ContentTesting.Pipelines.GetTests;
 using Sitecore.Diagnostics;
 using Sitecore.Layouts;
@@ -8,9 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Sitecore.ContentTesting.Tests;
-
-namespace Sitecore.Support.ContentTesting.Pipelines.GetTests
-{
   public class GetPersonalizationTests : GetTestsProcessor
   {
     public override void Process(GetTestsArgs args)

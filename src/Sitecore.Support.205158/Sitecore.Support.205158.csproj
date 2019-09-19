@@ -22,6 +22,7 @@
     <UseGlobalApplicationHostFile />
     <TargetFrameworkProfile />
     <LangVersion>6</LangVersion>
+    <Use64BitIISExpress />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -60,9 +61,12 @@
     <Reference Include="System.Configuration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ComponentTest.cs" />
+    <Compile Include="GetComponentTests.cs" />
     <Compile Include="GetPersonalizationTests.cs" />
     <Compile Include="PersonalizationTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RenderingTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="App_Config\Include\zzz\Sitecore.Support.205158.config" />
@@ -85,7 +89,7 @@
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>0</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost:60110/</IISUrl>
+          <IISUrl>http://localhost:49280/</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
           <CustomServerUrl>

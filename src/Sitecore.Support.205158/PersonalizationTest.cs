@@ -1,117 +1,79 @@
-﻿using System;
-using Sitecore.ContentTesting.Tests;
-using Sitecore.Data.Items;
-using Sitecore.Layouts;
-using Sitecore.ContentTesting.Model.Data.Items;
-using Sitecore.Data;
-using Sitecore.Data.Fields;
-using Sitecore.Diagnostics;
-using Sitecore.Xml;
-
+// © 2014-2019 Sitecore Corporation A/S. All rights reserved. Sitecore® is a registered trademark of Sitecore Corporation A/S.
 namespace Sitecore.Support.ContentTesting.Tests
 {
-  public class PersonalizationTest : Sitecore.ContentTesting.Tests.PersonalizationTest, ITest
+  using System.Linq;
+  using Sitecore.ContentTesting;
+  using Sitecore.ContentTesting.Model.Data.Items;
+  using Sitecore.Data;
+  using Sitecore.Data.Items;
+  using Sitecore.Layouts;
+  using Sitecore.Globalization;
+  using Sitecore.StringExtensions;
+  using Sitecore.ContentTesting.Tests;
+
+  /// <summary>
+  /// Represents a single personalization test.
+  /// </summary>
+  public class PersonalizationTest : RenderingTest, ITest
   {
-    public PersonalizationTest(RenderingDefinition renderingDefinition, Item contentItem) : base(renderingDefinition, contentItem)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PersonalizationTest"/> class.
+    /// </summary>
+    /// <param name="renderingDefinition">The rendering using the test.</param>
+    /// <param name="contentItem">The Item containing the rendering.</param>
+    public PersonalizationTest(RenderingDefinition renderingDefinition, Item contentItem)
+      : base(renderingDefinition, contentItem)
     {
     }
 
-    protected string Layout { get; set; }
-    protected string Delta { get; set; }
-
-    bool ITest.Remove(bool deleteItems)
+    /// <summary>
+    /// Gets a friendly name for the test.
+    /// </summary>
+    public string Name
     {
-      TestDefinitionItem testDefinitionItem = this.GetTestDefinitionItem(this.renderingDefinition, this.contentItem.Database);
-      this.Layout = LayoutField.GetFieldValue(this.contentItem.Fields[FieldIDs.LayoutField]);
-      string delta;
-      if ((delta = this.contentItem.Fields[FieldIDs.FinalLayoutField].GetValue(false, false)) == null)
+      get
       {
-        delta = (this.contentItem.Fields[FieldIDs.FinalLayoutField].GetInheritedValue(false) ?? this.contentItem.Fields[FieldIDs.FinalLayoutField].GetValue(false, false, true, false, false));
+        return Translate.Text(Texts.PERSONALIZATION_TEST_ON_0).FormatWith(this.RenderingName);
       }
-      this.Delta = delta;
-      this.RemoveInFieldEx(FieldIDs.LayoutField);
-      this.RemoveInFieldEx(FieldIDs.FinalLayoutField);
-      if (testDefinitionItem != null)
-      {
-        if (deleteItems)
-        {
-          testDefinitionItem.InnerItem.Delete();
-        }
-        else
-        {
-          testDefinitionItem.InnerItem.Recycle();
-        }
-      }
-      return true;
     }
 
-    private void RemoveInFieldEx(ID fieldId)
+    /// <summary>
+    /// Gets the <see cref="TestDefinitionItem"/> for the test.
+    /// </summary>
+    /// <param name="rendering">The rendering using the test.</param>
+    /// <param name="database">The database to lookup data in.</param>
+    /// <returns>The test definition item if found, otherwise null.</returns>
+    protected override TestDefinitionItem GetTestDefinitionItem(RenderingDefinition rendering, Database database)
     {
-      if (string.IsNullOrWhiteSpace(this.contentItem[fieldId]))
+      var renderingRef = (from d in this.contentItem.Database.Resources.Devices.GetAll()
+                          from r in this.contentItem.Visualization.GetRenderings(d, false)
+                          where r.UniqueId == rendering.UniqueId
+                          select r).FirstOrDefault();
+
+      if (renderingRef != null)
       {
-        return;
-      }
-      LayoutDefinition layoutDefinition = fieldId == FieldIDs.LayoutField ? LayoutDefinition.Parse(this.Layout) : LayoutDefinition.Parse(this.FinalLayout);  // LayoutDefinition.Parse(LayoutField.GetFieldValue(this.contentItem.Fields[fieldId]));
-      if (layoutDefinition == null)
-      {
-        return;
-      }
-      foreach (DeviceDefinition deviceDefinition in layoutDefinition.Devices)
-      {
-        DeviceDefinition device = layoutDefinition.GetDevice(deviceDefinition.ID.ToString());
-        if (device != null)
+        var personalizationTest = renderingRef.Settings.PersonalizationTest;
+
+        if (!string.IsNullOrEmpty(personalizationTest))
         {
-          RenderingDefinition renderingByUniqueId = device.GetRenderingByUniqueId(this.renderingDefinition.UniqueId);
-          if (renderingByUniqueId != null)
+          var testItem = renderingRef.RenderingItem.Database.GetItem(personalizationTest);
+          if (testItem != null)
           {
-            this.RemoveFromRendering(renderingByUniqueId);
+            return TestDefinitionItem.Create(testItem);
           }
         }
       }
 
-      if (fieldId == FieldIDs.LayoutField)
-      {
-        this.Layout = layoutDefinition.ToXml();
-        using (new EditContext(this.contentItem))
-        {
-          LayoutField.SetFieldValue(this.contentItem.Fields[fieldId], this.Layout);
-        }
-      }
-      else
-      {
-        this.FinalLayout = layoutDefinition.ToXml();
-        using (new EditContext(this.contentItem))
-        {
-          LayoutField.SetFieldValue(this.contentItem.Fields[fieldId], this.FinalLayout, this.Layout);
-        }
-      }
+      return null;
     }
 
-    protected string FinalLayout
+    /// <summary>
+    /// Remove the test from the rendering.
+    /// </summary>
+    /// <param name="rendering">The rendering to remove the test from.</param>
+    protected override void RemoveFromRendering(RenderingDefinition rendering)
     {
-      get
-      {
-        string layoutDelta = this.Delta;
-        if (string.IsNullOrWhiteSpace(layoutDelta))
-        {
-          return this.Layout;
-        }
-        if (string.IsNullOrWhiteSpace(this.Layout))
-        {
-          return layoutDelta;
-        }
-        return XmlDeltas.ApplyDelta(this.Layout, layoutDelta);
-      }
-      set
-      {
-        Assert.ArgumentNotNull(value, "value");
-        if (!string.IsNullOrWhiteSpace(this.Layout))
-        {
-          this.Delta = (XmlUtil.XmlStringsAreEqual(this.Layout, value) ? null : XmlDeltas.GetDelta(value, this.Layout));
-          return;
-        }
-        this.Delta = value;
-      }
+      rendering.PersonalizationTest = null;
     }
   }
 }
